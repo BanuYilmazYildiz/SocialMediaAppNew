@@ -22,4 +22,6 @@ public class UserProfileController {
         return ResponseEntity.ok(userProfileService.findAll());
     }
 
+
+
 }

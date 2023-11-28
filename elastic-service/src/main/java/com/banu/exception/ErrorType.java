@@ -12,8 +12,8 @@ public enum ErrorType {
     USERNAME_DUPLICATE(4210,"Kullanici adi kullanilmaktadir" ,HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(4211,"Kulanici bulunamadi..." , HttpStatus.BAD_REQUEST ),
     USER_NOT_CREATED(4212,"Kullanici profili olusturulamadi...",HttpStatus.BAD_REQUEST),
-    INVALID_TOKEN(4213,"Gecersiz token",HttpStatus.BAD_REQUEST)
-    ;
+    INVALID_TOKEN(4213,"Gecersiz token",HttpStatus.BAD_REQUEST),
+    USER_NOT_SAVED(4214,"Kullanıcı kaydedilmedi",HttpStatus.BAD_REQUEST);
     private int code;
     private String message;
     private HttpStatus httpStatus;

@@ -9,6 +9,7 @@ import com.banu.exception.UserManagerException;
 import com.banu.manager.AuthManager;
 import com.banu.mapper.UserMapper;
 import com.banu.rabbitmq.model.RegisterModel;
+import com.banu.rabbitmq.producer.RegisterElasticProducer;
 import com.banu.repository.UserProfileRepository;
 import com.banu.repository.entity.UserProfile;
 import com.banu.utility.JwtTokenManager;
@@ -29,13 +30,15 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
     private final JwtTokenManager jwtTokenManager;
     private final AuthManager authManager;
     private final CacheManager cacheManager;
+    private final RegisterElasticProducer registerElasticProducer;
 
-    public UserProfileService(UserProfileRepository userProfileRepository, JwtTokenManager jwtTokenManager, AuthManager authManager, CacheManager cacheManager) {
+    public UserProfileService(UserProfileRepository userProfileRepository, JwtTokenManager jwtTokenManager, AuthManager authManager, CacheManager cacheManager, RegisterElasticProducer registerElasticProducer) {
         super(userProfileRepository);
         this.userProfileRepository = userProfileRepository;
         this.jwtTokenManager = jwtTokenManager;
         this.authManager = authManager;
         this.cacheManager = cacheManager;
+        this.registerElasticProducer = registerElasticProducer;
     }
 
     public Boolean createUser(UserCreateRequestDto dto) {
@@ -141,7 +144,8 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
 
     public Boolean createUserWithRabbitMq(RegisterModel model) {
         try {
-            save(UserMapper.INSTANCE.fromRegisterModelToUserProfile(model));
+            UserProfile userProfile = save(UserMapper.INSTANCE.fromRegisterModelToUserProfile(model));
+            registerElasticProducer.sendNewUser(UserMapper.INSTANCE.fromUserToRegisterElasticModel(userProfile));
             return true;
         } catch (Exception e){
             throw new UserManagerException(ErrorType.USER_NOT_CREATED);

@@ -16,11 +16,11 @@ public class GetAllData {
     private final UserProfileService userProfileService;
     private final UserManager userManager;
 
-
     //@PostConstruct  //required args ile dependency, constructor injection yapıyor. Beanin baslatılması için gereken islemleri yapıyor. metoda girmeden önce nesnelerin olusturulmasi ve sonrasında metodu cagırıyor
     // Bir kere calıistirdiktan sonra kapatıyoruz cumku her seferinde tum verileri tekrar tekrar getirecek
     public void initDate(){
         List<UserProfile> userProfileList = userManager.findAll().getBody();
         userProfileService.saveAll(userProfileList);
     }
+
 }

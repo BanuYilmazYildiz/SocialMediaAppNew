@@ -66,8 +66,6 @@ public class AuthService extends ServiceManager<Auth,Long> {
         auth.setActivationCode(CodeGenerator.generateCode());
         try {
             save(auth);
-
-            //rabbitmq ile haberlesme saglayacagiz.
             registerProducer.sendNewUser(AuthMapper.INSTANCE.fromAuthToRegisterModel(auth));
             registerMailProducer.sendActivationCode(AuthMapper.INSTANCE.fromAuthToRegisterMailModel(auth));
             cacheManager.getCache("findbyrole").evict(auth.getRole().toString().toUpperCase());

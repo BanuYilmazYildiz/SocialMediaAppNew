@@ -7,6 +7,10 @@ spring:
 #    base-url: http://localhost:9411
 #    service:
 #      name: auth-service
+  security:
+    user:
+      name: banu
+      password: 123
   datasource:
     driver-class-name: org.postgresql.Driver
     username: postgres
@@ -36,3 +40,4 @@ rabbitmq:
   queue-register: register-queue
   register-mail-key: register-mail-key
   register-mail-queue: register-mail-queue
+
