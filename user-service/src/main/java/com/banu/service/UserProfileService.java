@@ -15,6 +15,7 @@ import com.banu.repository.entity.UserProfile;
 import com.banu.utility.JwtTokenManager;
 import com.banu.utility.ServiceManager;
 import com.banu.utility.enums.EStatus;
+import org.apache.catalina.User;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UserProfileService extends ServiceManager<UserProfile,String> {
+public class UserProfileService extends ServiceManager<UserProfile, String> {
 
     private final UserProfileRepository userProfileRepository;
     private final JwtTokenManager jwtTokenManager;
@@ -45,46 +46,48 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
         try {
             save(UserMapper.INSTANCE.fromCreateRequestToUser(dto));
             return true;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new UserManagerException(ErrorType.USER_NOT_CREATED);
         }
     }
 
-    public Boolean activateStatus(Long authId) {
-      Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(authId);
-      if(userProfile.isEmpty()){
-          throw new UserManagerException(ErrorType.USER_NOT_FOUND);
-      }else {
-          userProfile.get().setStatus(EStatus.ACTIVE);
-          update(userProfile.get());
-          return true;
-      }
-    }
+    public Boolean activateStatus(String token) {
 
-    public Boolean activateStatus2(ActivateStatusRequestDto dto) {
-        Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(dto.getAuthId());
-        if(userProfile.isEmpty()){
+        Optional<Long> authId = jwtTokenManager.getIdFromToken(token.substring(7));
+        Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(authId.get());
+        if (userProfile.isEmpty()) {
             throw new UserManagerException(ErrorType.USER_NOT_FOUND);
-        }else {
+        } else {
             userProfile.get().setStatus(EStatus.ACTIVE);
             update(userProfile.get());
             return true;
         }
     }
 
-    public Boolean update(UserProfileUpdateRequestDto dto){
+    public Boolean activateStatus2(ActivateStatusRequestDto dto) {
+        Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(dto.getAuthId());
+        if (userProfile.isEmpty()) {
+            throw new UserManagerException(ErrorType.USER_NOT_FOUND);
+        } else {
+            userProfile.get().setStatus(EStatus.ACTIVE);
+            update(userProfile.get());
+            return true;
+        }
+    }
+
+    public Boolean update(UserProfileUpdateRequestDto dto) {
         Optional<Long> authId = jwtTokenManager.getIdFromToken(dto.getToken());
-        if(authId.isEmpty()){
+        if (authId.isEmpty()) {
             throw new UserManagerException(ErrorType.INVALID_TOKEN);
         }
         Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(authId.get());
-        if(userProfile.isEmpty()){
+        if (userProfile.isEmpty()) {
             throw new UserManagerException(ErrorType.USER_NOT_FOUND);
         }
 
         cacheManager.getCache("findbyusername").evict(userProfile.get().getUsername().toLowerCase());
 
-        if(!dto.getUsername().equals(userProfile.get().getUsername()) || !dto.getEmail().equals(userProfile.get().getEmail())){
+        if (!dto.getUsername().equals(userProfile.get().getUsername()) || !dto.getEmail().equals(userProfile.get().getEmail())) {
             userProfile.get().setUsername(dto.getUsername());
             userProfile.get().setEmail(dto.getEmail());
             UpdateEmailOrUsernameRequestDto updateEmailOrUsernameRequestDto = UpdateEmailOrUsernameRequestDto.builder()
@@ -106,7 +109,7 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
 
     public Boolean delete(Long authId) {
         Optional<UserProfile> userProfile = userProfileRepository.findOptionalByAuthId(authId);
-        if(userProfile.isEmpty()){
+        if (userProfile.isEmpty()) {
             throw new UserManagerException(ErrorType.USER_NOT_FOUND);
         }
         userProfile.get().setStatus(EStatus.DELETED);
@@ -114,7 +117,7 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
         return true;
     }
 
-    @Cacheable(value = "findbyusername",key = "#username.toLowerCase()")
+    @Cacheable(value = "findbyusername", key = "#username.toLowerCase()")
     public UserProfile findByUsername(String username) { //DENEme1 -> deneme1, DENEme1 -> deneme1 -> cacheleyecek
         try {
             Thread.sleep(3000);
@@ -122,24 +125,26 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
             throw new RuntimeException(e);
         }
         Optional<UserProfile> userProfile = userProfileRepository.findOptionalByUsernameIgnoreCase(username);
-        if(userProfile.isEmpty()){
+        if (userProfile.isEmpty()) {
             throw new UserManagerException(ErrorType.USER_NOT_FOUND);
         }
         return userProfile.get();
     }
 
-    @Cacheable(value="findbyrole",key = "#role.toUpperCase()") //USER  //findbyrole::USER
-    public List<UserProfile> findByRole(String role){
+    @Cacheable(value = "findbyrole", key = "#role.toUpperCase()") //USER  //findbyrole::USER
+    public List<UserProfile> findByRole(String token, String role) {
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
 //        ResponseEntity<List<Long>> authIds= authManager.findByRole(role);
-        List<Long> authIds = authManager.findByRole(role).getBody();
 
-        return authIds.stream().map(x->  userProfileRepository.findOptionalByAuthId(x)
-                .orElseThrow( () -> {throw new UserManagerException(ErrorType.USER_NOT_FOUND);})).collect(Collectors.toList());
+        List<Long> authIds = authManager.findByRole(token,role).getBody();
+        return authIds.stream().map(x -> userProfileRepository.findOptionalByAuthId(x)
+                .orElseThrow(() -> {
+                    throw new UserManagerException(ErrorType.USER_NOT_FOUND);
+                })).collect(Collectors.toList());
     }
 
     public Boolean createUserWithRabbitMq(RegisterModel model) {
@@ -147,7 +152,7 @@ public class UserProfileService extends ServiceManager<UserProfile,String> {
             UserProfile userProfile = save(UserMapper.INSTANCE.fromRegisterModelToUserProfile(model));
             registerElasticProducer.sendNewUser(UserMapper.INSTANCE.fromUserToRegisterElasticModel(userProfile));
             return true;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new UserManagerException(ErrorType.USER_NOT_CREATED);
         }
     }

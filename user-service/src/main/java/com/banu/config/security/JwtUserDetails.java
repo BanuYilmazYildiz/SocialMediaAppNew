@@ -1,0 +1,44 @@
+package com.banu.config.security;
+
+
+import com.banu.repository.entity.UserProfile;
+import com.banu.service.UserProfileService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class JwtUserDetails implements UserDetailsService {
+
+    @Autowired
+    private UserProfileService userProfileService;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return null;
+    }
+
+
+    public UserDetails loadUserByUserRole(String role) throws UsernameNotFoundException {
+       List<GrantedAuthority> authorityList = new ArrayList<>();
+       authorityList.add(new SimpleGrantedAuthority(role));
+
+       return User.builder()
+               .username(role)
+               .password("")
+               .accountLocked(false)
+               .accountExpired(false)
+               .authorities(authorityList)
+               .build();
+    }
+
+
+}

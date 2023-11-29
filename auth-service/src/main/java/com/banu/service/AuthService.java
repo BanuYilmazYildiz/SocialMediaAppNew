@@ -95,6 +95,7 @@ public class AuthService extends ServiceManager<Auth,Long> {
                 });
     }
 
+    @Transactional
     public Boolean activateStatus(ActivationRequestDto dto) {
         Optional<Auth> auth = findById(dto.getId());
         if(auth.isEmpty()) {
@@ -104,7 +105,10 @@ public class AuthService extends ServiceManager<Auth,Long> {
             auth.get().setStatus(EStatus.ACTIVE);
             update(auth.get());
 //            userManager.activateStatus(auth.get().getId());
-            userManager.activateStatus2(ActivateStatusRequestDto.builder().authId(dto.getId()).build());
+            String token = jwtTokenManager.createToken(auth.get().getId(),auth.get().getRole()).get();
+//            userManager.activateStatus(dto.getId());
+            userManager.activateStatus("Bearer "+token);
+//            userManager.activateStatus2(ActivateStatusRequestDto.builder().authId(dto.getId()).build());
             //            auth.get().setUpdateDate(System.currentTimeMillis());
             //            authRepository.save(auth.get());
             return true;
